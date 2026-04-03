@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOD MODE - Casino Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-10 font-sans">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-yellow-500 pb-4">
+            <h1 class="text-3xl font-black text-yellow-500 uppercase tracking-tighter">GOD MODE DASHBOARD</h1>
+            <span class="bg-red-600 text-[10px] px-2 py-1 rounded animate-pulse">LIVE CONTROL</span>
+        </div>
+        
+        <!-- DAFTAR PEMAIN -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl mb-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                Daftar Pemain Aktif
+            </h2>
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-slate-400 border-b border-slate-700 uppercase text-xs">
+                        <th class="p-3">Username</th>
+                        <th class="p-3">Saldo Saat Ini</th>
+                        <th class="p-3">Input Saldo Baru</th>
+                        <th class="p-3 text-center">Aksi Control</th>
+                    </tr>
+                </thead>
+                <tbody id="userTable">
+                    <!-- Data diisi otomatis -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PANEL RNG LOCK (ID 10-15) -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl">
+            <h2 class="text-xl font-bold mb-4 text-yellow-500 uppercase tracking-tighter flex items-center gap-2">
+                <svg xmlns="http://www.w3.org" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                RNG LOCK CONTROL (ID 10-15)
+            </h2>
+            <p class="text-slate-400 text-[10px] mb-4 italic uppercase tracking-widest">*Simbol tidak akan muncul jika status OFF</p>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <!-- Contoh Tombol Pengganda (Multiplier) -->
+<button onclick="updateChance('multiplier_chance', 0.15)" class="bg-green-600 px-4 py-2 rounded">
+    HIDUPKAN PENGGANDA (15%)
+</button>
+
+<button onclick="updateChance('multiplier_chance', 0.00)" class="bg-red-600 px-4 py-2 rounded">
+    MATIKAN PENGGANDA (0%)
+</button>
+
+<!-- Contoh Tombol Scatter -->
+<button onclick="updateChance('scatter_chance', 0.05)" class="bg-yellow-600 px-4 py-2 rounded">
+    SET SCATTER (5%)
+</button>
+
+            </div>
+            
+    <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-2xl">
+    <h2 class="text-sm font-bold mb-4 text-yellow-500 uppercase tracking-widest">🚨 Live RNG LED Control</h2>
+    <div id="rngButtons" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <!-- Lampu LED akan muncul di sini secara otomatis -->
+    </div>
+        </div>
+    </div>
+
+    <script>
+        let isTyping = false;
+
+        function pauseRefresh() { isTyping = true; }
+        function resumeRefresh() { isTyping = false; }
+
+        async function fetchUsers() {
+            if (isTyping) return; 
+            try {
+                const res = await fetch('/api/user/pemain1');
+                const user = await res.json();
+                const table = document.getElementById('userTable');
+                const currentInputVal = document.getElementById('newBalanceInput')?.value || "";
+
+                table.innerHTML = `
+                    <tr class="border-b border-slate-700 hover:bg-slate-700/50 transition-colors">
+                        <td class="p-3 font-medium text-cyan-400">${user.username}</td>
+                        <td class="p-3 text-green-400 font-mono font-bold">₱ ${parseFloat(user.balance).toLocaleString()}</td>
+                        <td class="p-3">
+                            <input type="number" id="newBalanceInput" 
+                                value="${currentInputVal}"
+                                class="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm w-32 outline-none focus:border-yellow-500 text-white" 
+                                placeholder="Nominal..."
+                                onfocus="pauseRefresh()" 
+                                onblur="resumeRefresh()">
+                        </td>
+                        <td class="p-3 flex justify-center gap-2">
+                            <button onclick="updateBalance('${user.username}')" class="bg-green-600 hover:bg-green-500 px-3 py-2 rounded-lg text-[10px] font-black transition-all active:scale-95 shadow-lg">UPDATE SALDO</button>
+                            <button onclick="setTarget('${user.username}', 'scatter')" class="bg-yellow-600 hover:bg-yellow-500 px-3 py-2 rounded-lg text-[10px] font-black transition-all active:scale-95 shadow-lg">FORCE ZEUS</button>
+                            <button onclick="setTarget('${user.username}', 'none')" class="bg-slate-600 hover:bg-slate-500 px-3 py-2 rounded-lg text-[10px] font-black transition-all active:scale-95">RESET RNG</button>
+                        </td>
+                    </tr>
+                `;
+            } catch (err) { console.error("Gagal ambil data:", err); }
+        }
+
+        // Fungsi untuk mengirim perubahan peluang ke Server.js
+async function updateChance(type, value) {
+    try {
+        const response = await fetch('http://localhost:3000/api/admin/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // Mengirim objek { multiplier_chance: 0.1 } atau { scatter_chance: 0.05 }
+            body: JSON.stringify({ [type]: value })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert("✅ Berhasil: " + data.message);
+            console.log("Config Sekarang:", data.current);
+        }
+    } catch (err) {
+        console.error("❌ Gagal:", err);
+        alert("Gagal konek ke server! Pastikan node server.js jalan.");
+    }
+}
+
+
+        async function updateBalance(username) {
+            const newBalance = document.getElementById('newBalanceInput').value;
+            if (!newBalance) return alert("Masukkan nominal!");
+            try {
+                const res = await fetch('/api/admin/update-balance', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, newBalance })
+                });
+                const data = await res.json();
+                if (data.success) { alert(data.message); isTyping = false; fetchUsers(); }
+            } catch (err) { alert("Gagal update!"); }
+        }
+
+        async function setTarget(username, target) {
+            try {
+                const res = await fetch('/api/admin/set-target', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, target })
+                });
+                const data = await res.json();
+                if (data.success) alert(data.message);
+            } catch (err) { alert("Gagal set target!"); }
+        }
+
+        // Fungsi Spesifik untuk Mengunci/Membuka ID Simbol tertentu
+async function toggleSymbolID(id, status) {
+    try {
+        const response = await fetch('http://localhost:3000/api/admin/toggle-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                id: parseInt(id), // ID Simbol (9-14)
+                status: status    // true (ON) atau false (LOCKED/OFF)
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert(`Simbol ID ${id} sekarang: ${status ? 'AKTIF' : 'TERKUNCI'}`);
+        }
+    } catch (err) {
+        alert("Gagal akses server admin!");
+    }
+}
+
+
+        // FUNGSI TOGGLE RNG LOCK
+        async function toggleID(id, btn) {
+    // 1. Cek status saat ini berdasarkan teks atau class (lebih aman)
+    const isCurrentlyOff = btn.innerText.includes("OFF");
+
+    try {
+        const res = await fetch('/api/admin/toggle-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // Kirim 'true' jika ingin mengaktifkan (ON), 'false' jika ingin mengunci (OFF)
+            // Pastikan ID dikirim sebagai Integer
+body: JSON.stringify({ id: parseInt(id), status: isActivating })
+
+        });
+        
+        const data = await res.json();
+
+        if (data.success) {
+            if (isCurrentlyOff) {
+                // Style saat ON (Aktif)
+                btn.className = "bg-green-600 p-3 rounded-lg text-[10px] font-black border border-green-400 transition-all shadow-[0_0_15px_rgba(22,163,74,0.4)] text-white";
+                btn.innerText = (id == 15 ? "SCATTER" : "x" + getMultVal(id)) + " (ON)";
+            } else {
+                // Style saat OFF (Terkunci/Locked)
+                btn.className = (id == 15) 
+                    ? "bg-red-900/40 p-3 rounded-lg text-[10px] font-black border border-red-800 transition-all text-red-200" 
+                    : "bg-slate-700 p-3 rounded-lg text-[10px] font-black border border-slate-600 transition-all text-white";
+                btn.innerText = (id == 15 ? "SCATTER" : "x" + getMultVal(id)) + " (OFF)";
+            }
+        }
+    } catch (err) { 
+        console.error(err);
+        alert("Gagal akses server admin!"); 
+    }
+}
+
+function getMultVal(id) {
+    const map = {9:2, 10:5, 11:10, 12:25, 13:50, 14:100};
+    return map[id];
+}
+
+// Mapping ID ke Nama Tampilan
+const idNames = {
+    9: "x2", 10: "x5", 11: "x10", 12: "x25", 13: "x50", 14: "x100", 15: "SCATTER"
+};
+
+async function fetchRNGConfig() {
+    try {
+        const res = await fetch('http://localhost:3000/api/admin/config');
+        const config = await res.json();
+        const container = document.getElementById('rngButtons');
+        
+        container.innerHTML = ""; // Bersihkan tombol lama
+        
+        // Render Tombol ID 9 sampai 15
+        for (let id = 9; id <= 15; id++) {
+            const isActive = config.allowed_ids[id];
+            const btn = document.createElement('button');
+            
+            // Logika Warna LED
+            const activeClass = "bg-green-600 border-green-400 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)]";
+            const inactiveClass = "bg-slate-800 border-red-900 text-red-700 opacity-50";
+            
+            btn.className = `p-4 rounded-xl border-2 font-black text-[10px] transition-all transform active:scale-95 ${isActive ? activeClass : inactiveClass}`;
+            btn.innerHTML = `
+                <div class="flex flex-col items-center gap-1">
+                    <span class="w-2 h-2 rounded-full ${isActive ? 'bg-green-300 animate-pulse' : 'bg-red-900'}"></span>
+                    ${idNames[id]} ${isActive ? 'ON' : 'OFF'}
+                </div>
+            `;
+            
+            btn.onclick = () => toggleID(id, isActive);
+            container.appendChild(btn);
+        }
+    } catch (err) { console.error("Gagal sinkronisasi LED"); }
+}
+
+async function toggleID(id, currentStatus) {
+    try {
+        const res = await fetch('http://localhost:3000/api/admin/toggle-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: Number(id), status: !currentStatus })
+        });
+        const data = await res.json();
+        if (data.success) fetchRNGConfig(); // Refresh lampu setelah klik
+    } catch (err) { alert("Server Error!"); }
+}
+
+// Jalankan saat halaman dibuka
+fetchRNGConfig();
+
+
+        fetchUsers();
+        setInterval(fetchUsers, 3000);
+    </script>
+</body>
+</html>
