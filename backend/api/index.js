@@ -312,3 +312,6 @@ const app = express();
 // ... rute API kamu ...
 
 module.exports = app;
+
+const cors = require('cors');
+app.use(cors()); // Izinkan semua domain akses API ini
