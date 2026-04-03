@@ -315,3 +315,13 @@ module.exports = app;
 
 const cors = require('cors');
 app.use(cors()); // Izinkan semua domain akses API ini
+
+const path = require('path');
+
+// Beritahu Express folder public ada di mana
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Buat rute khusus untuk memanggil admin.html
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
