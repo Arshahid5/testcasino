@@ -444,7 +444,7 @@ const closeTotalWin = () => {
 };
 
 onMounted(async () => {
-  const res = await axios.get('http://localhost:3000/api/user/pemain1');
+  const res = await axios.get('https://testcasino-sigma.vercel.app/api/get_balance?username=pemain1');
   balance.value = parseFloat(res.data.balance || 0);
 });
 </script>
