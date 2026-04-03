@@ -325,3 +325,11 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
+
+const path = require('path');
+
+// Tambahkan rute ini
+app.get('/admin', (req, res) => {
+  // Pastikan path-nya benar menuju folder public/admin.html
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
